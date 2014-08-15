@@ -7,6 +7,8 @@ var gulp = require('gulp'),
     header  = require('gulp-header'),
     rename = require('gulp-rename'),
     minifyCSS = require('gulp-minify-css'),
+    fileinclude = require('gulp-file-include'),
+    path = require("path"),
     package = require('./package.json');
 
 
@@ -22,44 +24,57 @@ var banner = [
   '\n'
 ].join('');
 
+var paths = {
+  htmlDir: 'src/',
+  htmlDestinationDir: 'dist/',
+  sassDir: 'src/scss/',
+  sassDestinationDir: 'dist/assets/css',
+  jsDir: 'src/js/',
+  jsDestinationDir: 'dist/assets/js'
+};
+
+gulp.task('html', function() {
+    return gulp.src(path.join(paths.htmlDir, '*.html'))
+      .pipe(fileinclude())
+      .pipe(gulp.dest(paths.htmlDestinationDir))
+      .pipe(browserSync.reload({stream:true}));
+});
+
 gulp.task('css', function () {
-    return gulp.src('src/scss/style.scss')
+    return gulp.src(path.join(paths.sassDir, 'style.scss'))
     .pipe(sass({errLogToConsole: true}))
     .pipe(autoprefixer('last 4 version'))
-    .pipe(gulp.dest('app/assets/css'))
+    .pipe(gulp.dest(paths.sassDestinationDir))
     .pipe(minifyCSS())
     .pipe(rename({ suffix: '.min' }))
     .pipe(header(banner, { package : package }))
-    .pipe(gulp.dest('app/assets/css'))
+    .pipe(gulp.dest(paths.sassDestinationDir))
     .pipe(browserSync.reload({stream:true}));
 });
 
 gulp.task('js',function(){
-  gulp.src('src/js/scripts.js')
+  return gulp.src(path.join(paths.jsDir, 'scripts.scss'))
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(header(banner, { package : package }))
-    .pipe(gulp.dest('app/assets/js'))
+    .pipe(gulp.dest(paths.jsDestinationDir))
     .pipe(uglify())
     .pipe(header(banner, { package : package }))
     .pipe(rename({ suffix: '.min' }))
-    .pipe(gulp.dest('app/assets/js'))
+    .pipe(gulp.dest(paths.jsDestinationDir))
     .pipe(browserSync.reload({stream:true, once: true}));
 });
 
 gulp.task('browser-sync', function() {
     browserSync.init(null, {
         server: {
-            baseDir: "app"
+            baseDir: "dist"
         }
     });
 });
-gulp.task('bs-reload', function () {
-    browserSync.reload();
-});
 
-gulp.task('default', ['css', 'js', 'browser-sync'], function () {
+gulp.task('default', ['css', 'js', 'html', 'browser-sync'], function () {
     gulp.watch("src/scss/*/*.scss", ['css']);
     gulp.watch("src/js/*.js", ['js']);
-    gulp.watch("app/*.html", ['bs-reload']);
+    gulp.watch("src/*.html", ['html']);
 });
